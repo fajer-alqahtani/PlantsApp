@@ -7,7 +7,25 @@
 
 import SwiftUI
 
+//MARK: -DARK MODE
+struct DarkMode: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+            .preferredColorScheme(.dark)
+    }
+}
+
+//MARK: -Coding
+
 struct ContentView: View {
+    @State private var isShowingReminder = false
+
+     // Data the sheet edits (examples — use the ones you have)
+     @State private var plantName: String = ""
+     @State private var room: String = "Bedroom"
+     @State private var light: String = "Full sun"
+     @State private var wateringDays: String = "Every day"
+     @State private var waterAmount: String = "20–50 ml"
     var body: some View {
         ZStack {
             Color
@@ -15,6 +33,7 @@ struct ContentView: View {
                 .ignoresSafeArea(.all)
             
             VStack {
+                
                 Text("My Plants 🌱")
                     .font(.largeTitle)
                     .foregroundColor(.white)
@@ -49,7 +68,7 @@ struct ContentView: View {
                 Spacer()
                 
                 Button(action: {
-                    // your action
+                    isShowingReminder = true
                 }) {
                     Text("Set Plant Reminder")
                         .font(.system(size: 18, weight: .semibold))
@@ -67,6 +86,14 @@ struct ContentView: View {
                         )
                         .clipShape(Capsule())
                         
+                }
+                .sheet(isPresented: $isShowingReminder) {
+                    SetReminder()
+                    // Sheet sizing & look (matches your design)
+                    .presentationDetents([.large])               // full card
+                    .presentationDragIndicator(.visible)         // drag handle
+                    .presentationCornerRadius(32)                // rounded like your mock
+                    .interactiveDismissDisabled(false)           // allow swipe-down if you want
                 }
                 .padding(.bottom, 40)
             }
