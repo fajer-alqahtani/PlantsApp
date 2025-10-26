@@ -6,12 +6,16 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct Plants_AppApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            // Start wherever you want (ContentView or PlantsListView)
+            PlantsListView()
         }
+        // This line wires SwiftData up for Plant
+        .modelContainer(for: Plant.self)
     }
 }

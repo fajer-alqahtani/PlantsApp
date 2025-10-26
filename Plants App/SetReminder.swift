@@ -6,14 +6,17 @@
 //
 
 import SwiftUI
+import SwiftData
 
 //MARK: -DARK MODE
 struct Dark: PreviewProvider {
     static var previews: some View {
         SetReminder()
             .preferredColorScheme(.dark)
+            .modelContainer(for: Plant.self, inMemory: true)
     }
 }
+
 //MARK: - Card
 struct ReminderCard: View {
     @Binding var plantName: String
@@ -27,35 +30,29 @@ struct ReminderCard: View {
 
     var body: some View {
         VStack(spacing: 18) {
-
-            // Header (X • Set Reminder • ✓) inside the card
+            // Header
             HStack {
                 CircleIconButton(
                     systemName: "xmark",
                     fill: .black.opacity(0.35),
                     action: onCancel
                 )
-
                 Spacer()
-
                 Text("Set Reminder")
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.95))
-
                 Spacer()
-
                 CircleIconButton(
                     systemName: "checkmark",
-                    fill: Color(red: 0.27, green: 0.82, blue: 0.58), // the green in your mock
+                    fill: Color(red: 0.27, green: 0.82, blue: 0.58),
                     action: onSave
                 )
             }
             .padding(.top, 6)
 
-            // Plant name field (rounded pill)
+            // Fields
             PillTextField(label: "Plant Name", text: $plantName)
 
-            // Group 1: Room + Light (single rounded block with a divider)
             SectionCard {
                 SettingRow(
                     systemIcon: "paperplane",
@@ -63,9 +60,7 @@ struct ReminderCard: View {
                     value: $room,
                     options: ["Bedroom", "Living Room", "Kitchen", "Balcony"]
                 )
-
                 SectionDivider()
-
                 SettingRow(
                     systemIcon: "sun.max",
                     title: "Light",
@@ -74,7 +69,6 @@ struct ReminderCard: View {
                 )
             }
 
-            // Group 2: Watering Days + Water Amount
             SectionCard {
                 SettingRow(
                     systemIcon: "drop",
@@ -82,9 +76,7 @@ struct ReminderCard: View {
                     value: $watering,
                     options: ["Every day", "Every 2 days", "Twice a week", "Weekly"]
                 )
-
                 SectionDivider()
-
                 SettingRow(
                     systemIcon: "drop",
                     title: "Water",
@@ -100,7 +92,6 @@ struct ReminderCard: View {
 }
 
 // MARK: - SettingRow
-
 struct SettingRow: View {
     let systemIcon: String
     let title: String
@@ -112,13 +103,10 @@ struct SettingRow: View {
             Image(systemName: systemIcon)
                 .frame(width: 24)
                 .foregroundStyle(.white.opacity(0.9))
-
             Text(title)
                 .foregroundStyle(.white)
                 .font(.headline)
-
             Spacer()
-
             Menu {
                 ForEach(options, id: \.self) { opt in
                     Button(opt) { value = opt }
@@ -136,16 +124,14 @@ struct SettingRow: View {
             .menuStyle(.automatic)
         }
         .padding(.horizontal, 18)
-        .frame(height: 64) // taller than the name pill, like your mock
-        .background(Color.white.opacity(0.001)) // keep tap area clean
+        .frame(height: 64)
+        .background(Color.white.opacity(0.001))
     }
 }
-
 
 //MARK: -
 struct SectionCard<Content: View>: View {
     @ViewBuilder var content: Content
-
     var body: some View {
         VStack(spacing: 0) {
             content
@@ -160,10 +146,9 @@ struct SectionDivider: View {
         Rectangle()
             .fill(Color.white.opacity(0.12))
             .frame(height: 1)
-            .padding(.leading, 56) // align with icon column
+            .padding(.leading, 56)
     }
 }
-
 
 //MARK: - HEADER
 struct CircleIconButton: View {
@@ -185,7 +170,6 @@ struct CircleIconButton: View {
         .buttonStyle(.plain)
     }
 }
-    
 
 //MARK: -
 struct PillTextField: View {
@@ -197,10 +181,9 @@ struct PillTextField: View {
             Text(label)
                 .foregroundStyle(.white.opacity(0.9))
                 .font(.headline)
-
             TextField("Pothos", text: $text)
                 .foregroundStyle(.white.opacity(0.85))
-                .tint(Color(red: 0.18, green: 0.83, blue: 0.74)) // caret teal like your mock
+                .tint(Color(red: 0.18, green: 0.83, blue: 0.74))
                 .textInputAutocapitalization(.words)
                 .disableAutocorrection(true)
         }
@@ -210,44 +193,68 @@ struct PillTextField: View {
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
 }
+
 //MARK: - Code
 struct SetReminder: View {
     @State private var plantName: String = "Pothos"
-        @State private var room: String = "Bedroom"
-        @State private var light: String = "Full sun"
-        @State private var watering: String = "Every day"
-        @State private var waterAmount: String = "20–50 ml"
+    @State private var room: String = "Bedroom"
+    @State private var light: String = "Full sun"
+    @State private var watering: String = "Every day"
+    @State private var waterAmount: String = "20–50 ml"
 
-        @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
 
-        var body: some View {
-            ZStack {
-                Color.black.ignoresSafeArea()
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
 
-                VStack(spacing: 24) {
-                    // The card (matches your screenshot 1–1)
-                    ReminderCard(
-                        plantName: $plantName,
-                        room: $room,
-                        light: $light,
-                        watering: $watering,
-                        waterAmount: $waterAmount,
-                        onCancel: { dismiss() },
-                        onSave: {
-                            // TODO: save to your model / view model
-                            dismiss()
-                        }
-                    )
-
-                    Spacer(minLength: 24)
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
+            VStack(spacing: 24) {
+                ReminderCard(
+                    plantName: $plantName,
+                    room: $room,
+                    light: $light,
+                    watering: $watering,
+                    waterAmount: $waterAmount,
+                    onCancel: { dismiss() },
+                    onSave: {
+                        addPlant()
+                        dismiss()
+                    }
+                )
+                Spacer(minLength: 24)
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
         }
     }
 
+    private func addPlant() {
+        let frequencyDays = wateringToDays(watering)
+        let plant = Plant(
+            name: plantName.isEmpty ? "Unnamed Plant" : plantName,
+            room: room,
+            light: light,
+            wateringFrequencyDays: frequencyDays,
+            waterAmount: waterAmount,
+            lastWatered: Date.now
+        )
+        context.insert(plant)
+        try? context.save()
+    }
+
+    private func wateringToDays(_ value: String) -> Int {
+        switch value {
+        case "Every day": return 1
+        case "Every 2 days": return 2
+        case "Twice a week": return 3
+        case "Weekly": return 7
+        default: return 3
+        }
+    }
+}
+
 #Preview {
     SetReminder()
-    
+        .modelContainer(for: Plant.self, inMemory: true)
 }
