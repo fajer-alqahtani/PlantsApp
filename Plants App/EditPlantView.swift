@@ -13,6 +13,8 @@ struct EditPlantView: View {
     @State private var watering: String = ""
     @State private var waterAmount: String = ""
 
+    @State private var showDeleteConfirm = false
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -30,6 +32,62 @@ struct EditPlantView: View {
                         dismiss()
                     }
                 )
+
+                // Delete button with same capsule glass shape (red destructive tint)
+                Button(role: .destructive) {
+                    showDeleteConfirm = true
+                } label: {
+                    Text("Delete Reminder")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(height: 48)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            ZStack {
+                                // Glass base
+                                Capsule(style: .continuous)
+                                    .fill(.ultraThinMaterial)
+                                    .overlay(
+                                        Capsule(style: .continuous)
+                                            .stroke(Color.white.opacity(0.25), lineWidth: 0.5)
+                                    )
+                                    .shadow(color: .black.opacity(0.35), radius: 10, y: 5)
+
+                                // Destructive red gradient tint
+                                LinearGradient(
+                                    colors: [
+                                        Color(red: 0.95, green: 0.23, blue: 0.23).opacity(0.90),
+                                        Color(red: 0.80, green: 0.11, blue: 0.11).opacity(0.90)
+                                    ],
+                                    startPoint: .top, endPoint: .bottom
+                                )
+                                .clipShape(Capsule(style: .continuous))
+
+                                // Subtle inner highlight
+                                Capsule(style: .continuous)
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [Color.white.opacity(0.45), Color.white.opacity(0.05)],
+                                            startPoint: .top, endPoint: .bottom
+                                        ),
+                                        lineWidth: 1
+                                    )
+                                    .blur(radius: 0.5)
+                            }
+                        )
+                        .clipShape(Capsule(style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 6)
+                .confirmationDialog("Delete this reminder?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+                    Button("Delete", role: .destructive) {
+                        deletePlant()
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("This will remove the plant and its reminder.")
+                }
+
                 Spacer(minLength: 24)
             }
             .padding(.horizontal, 20)
@@ -53,6 +111,12 @@ struct EditPlantView: View {
         plant.wateringFrequencyDays = wateringToDays(watering)
         plant.waterAmount = waterAmount
         try? context.save()
+    }
+
+    private func deletePlant() {
+        context.delete(plant)
+        try? context.save()
+        dismiss()
     }
 
     private func wateringToDays(_ value: String) -> Int {

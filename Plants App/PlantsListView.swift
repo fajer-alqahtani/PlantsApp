@@ -165,12 +165,11 @@ struct PlantsListView: View {
 private struct CompletionView: View {
     var body: some View {
         VStack(spacing: 20) {
-            // Replace "PlantDone" with the asset name you have for the winking plant
             ZStack {
                 Circle()
                     .fill(Color.white.opacity(0.06))
                     .frame(width: 260, height: 260)
-                Image("PlantDone")
+                Image("Plant")
                     .resizable()
                     .scaledToFit()
                     .frame(width: 220, height: 220)
@@ -195,6 +194,12 @@ private struct PlantRow: View {
     private var isWateredToday: Bool {
         Calendar.current.isDateInToday(plant.lastWatered)
     }
+
+    // Colors for tag pills
+    private var pillFill: Color { Color(red: 0.17, green: 0.19, blue: 0.21) } // ~ #2B2F33
+    private var pillStroke: Color { Color.white.opacity(0.10) }
+    private var sunColor: Color { Color(red: 0xCC/255.0, green: 0xC7/255.0, blue: 0x85/255.0) }   // #CCC785
+    private var waterColor: Color { Color(red: 0xCA/255.0, green: 0xF3/255.0, blue: 0xFB/255.0) } // #CAF3FB
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -250,8 +255,8 @@ private struct PlantRow: View {
             }
 
             HStack(spacing: 8) {
-                Tag(icon: "sun.max", text: plant.light)
-                Tag(icon: "drop", text: plant.waterAmount)
+                Tag(icon: "sun.max", text: plant.light, foreground: sunColor, background: pillFill, stroke: pillStroke)
+                Tag(icon: "drop", text: plant.waterAmount, foreground: waterColor, background: pillFill, stroke: pillStroke)
                 Spacer()
             }
 
@@ -277,6 +282,10 @@ private struct PlantRow: View {
 private struct Tag: View {
     let icon: String
     let text: String
+    var foreground: Color = .white.opacity(0.9)
+    var background: Color = Color.white.opacity(0.12)
+    var stroke: Color = Color.white.opacity(0.15)
+
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: icon)
@@ -287,10 +296,10 @@ private struct Tag: View {
         .padding(.vertical, 4)
         .background(
             Capsule()
-                .fill(Color.white.opacity(0.12))
-                .overlay(Capsule().stroke(Color.white.opacity(0.15)))
+                .fill(background)
+                .overlay(Capsule().stroke(stroke))
         )
-        .foregroundStyle(.white.opacity(0.9))
+        .foregroundStyle(foreground)
     }
 }
 

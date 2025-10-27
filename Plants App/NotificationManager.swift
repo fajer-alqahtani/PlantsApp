@@ -8,23 +8,15 @@ enum NotificationManager {
     }
 
     static func scheduleWateringNotification(for plantName: String, everyNDays n: Int, atHour hour: Int = 9, minute: Int = 0) async {
-        // Build content
         let content = UNMutableNotificationContent()
-        content.title = "Time to water \(plantName)"
-        content.body = "Keep your plant happy! 💧"
+        content.title = "Hey! let’s water your plant"
+        content.body = "\(plantName) will be happy 💧"
         content.sound = .default
 
-        // First fire date: next occurrence of selected time, respecting the N-day cadence.
-        // We’ll schedule as repeating calendar triggers across multiple days by creating one trigger per day-offset modulo n.
-        // Simpler approach: schedule the next fire date once, non-repeating, and reschedule on app launch. But for convenience, we’ll use repeating with a custom next date sequence.
-
-        // Calendar-based repeating cannot repeat “every N days” directly; it repeats on specific date components.
-        // Workaround: schedule a single notification for the next date, non-repeating. When it fires, schedule the next one. For a simple first version, schedule multiple triggers ahead.
-        // Here, we’ll schedule the next one non-repeating; when the app next launches/foregrounds, you could reschedule more. For now, schedule a series ahead (e.g., next 10 occurrences).
-
         let center = UNUserNotificationCenter.current()
-        // Remove any pending duplicates for the same title (basic cleanup)
-        await center.removeAllPendingNotificationRequests()
+
+        // Do not use `await` here; this API is synchronous.
+        center.removeAllPendingNotificationRequests()
 
         let cal = Calendar.current
         let now = Date()
@@ -40,10 +32,12 @@ enum NotificationManager {
             let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
             let id = "water-\(plantName)-\(i)-\(Int(fireDate.timeIntervalSince1970))"
             let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
-            do {
-                try await center.add(request)
-            } catch {
-                // You might want to log or handle this in production
+
+            // Use completion-handler variant for broader compatibility
+            center.add(request) { error in
+                if let error = error {
+                    print("Failed to schedule \(id): \(error)")
+                }
             }
         }
     }

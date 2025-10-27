@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 //MARK: -DARK MODE
 struct Dark: PreviewProvider {
@@ -32,21 +33,13 @@ struct ReminderCard: View {
         VStack(spacing: 18) {
             // Header
             HStack {
-                CircleIconButton(
-                    systemName: "xmark",
-                    fill: .black.opacity(0.35),
-                    action: onCancel
-                )
+                GlassCircleIconButton(systemName: "xmark", action: onCancel)
                 Spacer()
                 Text("Set Reminder")
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.95))
                 Spacer()
-                CircleIconButton(
-                    systemName: "checkmark",
-                    fill: Color(red: 0.27, green: 0.82, blue: 0.58),
-                    action: onSave
-                )
+                GlassCircleIconButton(systemName: "checkmark", tint: Color(red: 0.27, green: 0.82, blue: 0.58), action: onSave)
             }
             .padding(.top, 6)
 
@@ -150,7 +143,41 @@ struct SectionDivider: View {
     }
 }
 
-//MARK: - HEADER
+//MARK: - Glass circle button
+struct GlassCircleIconButton: View {
+    let systemName: String
+    var tint: Color = .white.opacity(0.95)
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Circle()
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        Circle().stroke(Color.white.opacity(0.25), lineWidth: 1)
+                    )
+                    .overlay(
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.25), .clear],
+                                    startPoint: .top,
+                                    endPoint: .center
+                                )
+                            )
+                    )
+                Image(systemName: systemName)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(tint)
+            }
+            .frame(width: 44, height: 44)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// Keep original for other uses if needed
 struct CircleIconButton: View {
     let systemName: String
     let fill: Color
@@ -231,8 +258,7 @@ struct SetReminder: View {
 
     private func addPlant() {
         let frequencyDays = wateringToDays(watering)
-        // Important: initialize as NOT watered today
-        let notToday = Date.now.addingTimeInterval(-24 * 60 * 60) // yesterday
+        let notToday = Date.now.addingTimeInterval(-24 * 60 * 60)
         let plant = Plant(
             name: plantName.isEmpty ? "Unnamed Plant" : plantName,
             room: room,
@@ -243,6 +269,22 @@ struct SetReminder: View {
         )
         context.insert(plant)
         try? context.save()
+
+        // 5-second test notification (unchanged)
+        Task {
+            let content = UNMutableNotificationContent()
+            content.title = "Hey! let’s water your plant"
+            content.body = "\(plant.name) will be happy 💧"
+            content.sound = .default
+
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
+            let request = UNNotificationRequest(identifier: "test-\(UUID().uuidString)", content: content, trigger: trigger)
+            do {
+                try await UNUserNotificationCenter.current().add(request)
+            } catch {
+                print("Failed to schedule test notification: \(error)")
+            }
+        }
     }
 
     private func wateringToDays(_ value: String) -> Int {

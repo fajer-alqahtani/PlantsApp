@@ -12,8 +12,11 @@ import SwiftData
 struct Plants_AppApp: App {
     var body: some Scene {
         WindowGroup {
-            // Start wherever you want (ContentView or PlantsListView)
-            PlantsListView()
+            ContentView()
+                .task {
+                    // Ask for notification permission on launch
+                    _ = try? await NotificationManager.requestAuthorization()
+                }
         }
         // This line wires SwiftData up for Plant
         .modelContainer(for: Plant.self)

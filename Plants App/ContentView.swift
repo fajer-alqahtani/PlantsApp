@@ -18,25 +18,18 @@ struct DarkMode: PreviewProvider {
 }
 
 //MARK: -Coding
+
 struct ContentView: View {
     @State private var isShowingReminder = false
-    @AppStorage("hasAddedFirstPlant") private var hasAddedFirstPlant: Bool = false
 
-    // Query to know if we have any plants
+    // Query your plants so we can switch to the list once one exists
     @Query private var plants: [Plant]
-
-    // Local sheet state
-    @State private var plantName: String = ""
-    @State private var room: String = "Bedroom"
-    @State private var light: String = "Full sun"
-    @State private var wateringDays: String = "Every day"
-    @State private var waterAmount: String = "20–50 ml"
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Color.black.ignoresSafeArea(.all)
 
-            if plants.isEmpty && hasAddedFirstPlant == false {
+            if plants.isEmpty {
                 // Empty state
                 VStack {
                     Text("My Plants 🌱")
@@ -78,23 +71,43 @@ struct ContentView: View {
                             .foregroundColor(.white)
                             .frame(width: 280, height: 44)
                             .background(
-                                LinearGradient(
-                                    colors: [
-                                        Color(red: 0.34, green: 0.82, blue: 0.54),
-                                        Color(red: 0.22, green: 0.79, blue: 0.54)
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
+                                ZStack {
+                                    // Glass base
+                                    Capsule(style: .continuous)
+                                        .fill(.ultraThinMaterial)
+                                        .overlay(
+                                            Capsule(style: .continuous)
+                                                .stroke(Color.white.opacity(0.25), lineWidth: 0.5)
+                                        )
+                                        .shadow(color: .black.opacity(0.35), radius: 10, y: 5)
+
+                                    // Existing gradient tint (slightly translucent)
+                                    LinearGradient(
+                                        colors: [
+                                            Color(red: 0.34, green: 0.82, blue: 0.54).opacity(0.85),
+                                            Color(red: 0.22, green: 0.79, blue: 0.54).opacity(0.85)
+                                        ],
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                    .clipShape(Capsule(style: .continuous))
+
+                                    // Subtle inner highlight
+                                    Capsule(style: .continuous)
+                                        .stroke(
+                                            LinearGradient(
+                                                colors: [Color.white.opacity(0.45), Color.white.opacity(0.05)],
+                                                startPoint: .top, endPoint: .bottom
+                                            ),
+                                            lineWidth: 1
+                                        )
+                                        .blur(radius: 0.5)
+                                }
                             )
                             .clipShape(Capsule())
                     }
                     .sheet(isPresented: $isShowingReminder) {
                         SetReminder()
-                            .onDisappear {
-                                // If a plant was added, the query will update; set the flag so empty state won't return
-                                if !plants.isEmpty { hasAddedFirstPlant = true }
-                            }
                             .presentationDetents([.large])
                             .presentationDragIndicator(.visible)
                             .presentationCornerRadius(32)
@@ -107,6 +120,7 @@ struct ContentView: View {
                 .padding(.top, 24)
                 .padding()
             } else {
+                // Once at least one plant exists, show the list
                 PlantsListView()
             }
         }
