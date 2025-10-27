@@ -231,13 +231,15 @@ struct SetReminder: View {
 
     private func addPlant() {
         let frequencyDays = wateringToDays(watering)
+        // Important: initialize as NOT watered today
+        let notToday = Date.now.addingTimeInterval(-24 * 60 * 60) // yesterday
         let plant = Plant(
             name: plantName.isEmpty ? "Unnamed Plant" : plantName,
             room: room,
             light: light,
             wateringFrequencyDays: frequencyDays,
             waterAmount: waterAmount,
-            lastWatered: Date.now
+            lastWatered: notToday
         )
         context.insert(plant)
         try? context.save()

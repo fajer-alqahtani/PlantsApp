@@ -6,11 +6,19 @@ struct PlantsListView: View {
     @Environment(\.modelContext) private var context
 
     @State private var showingAddSheet = false
+    @State private var editingPlant: Plant?
 
+    // Header progress: fraction of plants watered today
+    private var wateredTodayCount: Int {
+        let cal = Calendar.current
+        return plants.filter { cal.isDateInToday($0.lastWatered) }.count
+    }
     private var headerProgress: Double {
         guard !plants.isEmpty else { return 0 }
-        let total = plants.map(\.progressTowardNextWater).reduce(0, +)
-        return min(1.0, max(0.0, total / Double(plants.count)))
+        return Double(wateredTodayCount) / Double(plants.count)
+    }
+    private var allDoneToday: Bool {
+        !plants.isEmpty && wateredTodayCount == plants.count
     }
 
     var body: some View {
@@ -28,49 +36,91 @@ struct PlantsListView: View {
                     .fill(Color.white.opacity(0.15))
                     .frame(height: 1)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Your plants are waiting for a sip 💦")
-                        .foregroundStyle(.white.opacity(0.9))
-                        .font(.subheadline)
+                if allDoneToday {
+                    // Completion state
+                    CompletionView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        .padding(.top, 32)
+                } else {
+                    // Normal header + list
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("\(wateredTodayCount) of your plants feel loved today ✨")
+                            .foregroundStyle(.white.opacity(0.9))
+                            .font(.subheadline)
 
-                    ProgressView(value: headerProgress)
-                        .tint(.white.opacity(0.9))
-                        .background(
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color.white.opacity(0.15))
-                        )
-                        .frame(height: 6)
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                }
-                .padding(.bottom, 8)
+                        ProgressView(value: headerProgress)
+                            .tint(Color(red: 0.27, green: 0.82, blue: 0.58))
+                            .background(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(Color.white.opacity(0.15))
+                            )
+                            .frame(height: 6)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .animation(.easeInOut(duration: 0.25), value: headerProgress)
+                    }
+                    .padding(.bottom, 8)
 
-                ScrollView {
-                    LazyVStack(spacing: 12) {
-                        // NOTE: no $plants, no indices — iterate the models directly
-                        ForEach(plants) { (plant: Plant) in
-                            PlantRow(plant: plant)
-                                .contextMenu {
-                                    Button("Mark as Watered", action: {
-                                        plant.lastWatered = .now
-                                        try? context.save()
-                                    })
-                                    
-                                    Divider()
-                                    
-                                    Button(role: .destructive, action: {
-                                        context.delete(plant)
-                                        try? context.save()
-                                    }) {
-                                        Text("Delete")
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(plants) { (plant: Plant) in
+                                PlantRow(plant: plant)
+                                    .contextMenu {
+                                        Button("Mark as Watered", action: {
+                                            plant.lastWatered = .now
+                                            try? context.save()
+                                        })
+                                        Button("Edit") { editingPlant = plant }
+                                        Divider()
+                                        Button(role: .destructive, action: {
+                                            context.delete(plant)
+                                            try? context.save()
+                                        }) {
+                                            Text("Delete")
+                                        }
                                     }
-                                }
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                        // Custom pill-shaped red delete like the mock
+                                        Button {
+                                            context.delete(plant)
+                                            try? context.save()
+                                        } label: {
+                                            ZStack {
+                                                Capsule(style: .continuous)
+                                                    .fill(Color.red)
+                                                    .frame(width: 72, height: 72)
+                                                Image(systemName: "trash")
+                                                    .font(.system(size: 22, weight: .bold))
+                                                    .foregroundStyle(.white)
+                                            }
+                                            .padding(.vertical, 6)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                    .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                                        Button {
+                                            plant.lastWatered = .now
+                                            try? context.save()
+                                        } label: {
+                                            Label("Water", systemImage: "drop.fill")
+                                        }
+                                        .tint(Color(red: 0.27, green: 0.82, blue: 0.58))
+                                    }
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                        Button {
+                                            editingPlant = plant
+                                        } label: {
+                                            Label("Edit", systemImage: "pencil")
+                                        }
+                                        .tint(.indigo)
+                                    }
+                            }
                         }
                     }
                 }
             }
             .padding(.horizontal, 24)
 
-            // Floating add button
+            // Floating add button (always visible)
             VStack {
                 Spacer()
                 HStack {
@@ -103,12 +153,49 @@ struct PlantsListView: View {
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(32)
         }
+        .sheet(item: $editingPlant) { plant in
+            EditPlantView(plant: plant)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(32)
+        }
+    }
+}
+
+private struct CompletionView: View {
+    var body: some View {
+        VStack(spacing: 20) {
+            // Replace "PlantDone" with the asset name you have for the winking plant
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.06))
+                    .frame(width: 260, height: 260)
+                Image("PlantDone")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 220, height: 220)
+            }
+
+            Text("All Done! 🎉")
+                .font(.title.weight(.bold))
+                .foregroundStyle(.white)
+
+            Text("All Reminders Completed")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
 private struct PlantRow: View {
     @Environment(\.modelContext) private var context
     @Bindable var plant: Plant
+
+    private var isWateredToday: Bool {
+        Calendar.current.isDateInToday(plant.lastWatered)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
@@ -125,20 +212,36 @@ private struct PlantRow: View {
                     plant.lastWatered = Date.now
                     try? context.save()
                 } label: {
-                    Circle()
-                        .strokeBorder(.white.opacity(0.8), lineWidth: 2)
-                        .frame(width: 22, height: 22)
-                        .overlay(
+                    Group {
+                        if isWateredToday {
                             Circle()
-                                .trim(from: 0, to: min(1, plant.progressTowardNextWater))
-                                .stroke(
-                                    Color.green.opacity(0.9),
-                                    style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                                .fill(Color(red: 0.27, green: 0.82, blue: 0.58))
+                                .frame(width: 22, height: 22)
+                                .overlay(
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundStyle(.black.opacity(0.9))
                                 )
-                                .rotationEffect(.degrees(-90))
-                        )
+                                .transition(.scale.combined(with: .opacity))
+                        } else {
+                            Circle()
+                                .strokeBorder(.white.opacity(0.8), lineWidth: 2)
+                                .frame(width: 22, height: 22)
+                                .overlay(
+                                    Circle()
+                                        .trim(from: 0, to: min(1, plant.progressTowardNextWater))
+                                        .stroke(
+                                            Color(red: 0.27, green: 0.82, blue: 0.58),
+                                            style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                                        )
+                                        .rotationEffect(.degrees(-90))
+                                        .animation(.easeInOut(duration: 0.25), value: plant.progressTowardNextWater)
+                                )
+                        }
+                    }
                 }
                 .buttonStyle(.plain)
+                .animation(.spring(response: 0.25, dampingFraction: 0.9), value: isWateredToday)
 
                 Text(plant.name)
                     .foregroundStyle(.white)
