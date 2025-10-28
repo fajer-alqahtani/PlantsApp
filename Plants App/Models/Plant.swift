@@ -3,8 +3,7 @@ import SwiftData
 
 @Model
 final class Plant {
-    // SwiftData gives each @Model a stable identity automatically;
-    // you don't need to declare your own id unless you want to.
+
     var name: String
     var room: String
     var light: String

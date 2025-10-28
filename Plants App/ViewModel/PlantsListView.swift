@@ -78,7 +78,7 @@ struct PlantsListView: View {
                                             Text("Delete")
                                         }
                                     }
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                         // Custom pill-shaped red delete like the mock
                                         Button {
                                             context.delete(plant)

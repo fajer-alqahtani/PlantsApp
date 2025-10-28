@@ -33,9 +33,10 @@ struct EditPlantView: View {
                     }
                 )
 
-                // Delete button with same capsule glass shape (red destructive tint)
+                // Delete button with same capsule glass shape (neutral/grey like other containers)
                 Button(role: .destructive) {
-                    showDeleteConfirm = true
+                    // Delete immediately without confirmation
+                    deletePlant()
                 } label: {
                     Text("Delete Reminder")
                         .font(.system(size: 17, weight: .semibold))
@@ -53,15 +54,10 @@ struct EditPlantView: View {
                                     )
                                     .shadow(color: .black.opacity(0.35), radius: 10, y: 5)
 
-                                // Destructive red gradient tint
-                                LinearGradient(
-                                    colors: [
-                                        Color(red: 0.95, green: 0.23, blue: 0.23).opacity(0.90),
-                                        Color(red: 0.80, green: 0.11, blue: 0.11).opacity(0.90)
-                                    ],
-                                    startPoint: .top, endPoint: .bottom
-                                )
-                                .clipShape(Capsule(style: .continuous))
+                                // Neutral grey tint to match containers (subtle)
+                                RoundedRectangle(cornerRadius: 999, style: .continuous)
+                                    .fill(Color.white.opacity(0.08))
+                                    .clipShape(Capsule(style: .continuous))
 
                                 // Subtle inner highlight
                                 Capsule(style: .continuous)
@@ -79,14 +75,6 @@ struct EditPlantView: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal, 6)
-                .confirmationDialog("Delete this reminder?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
-                    Button("Delete", role: .destructive) {
-                        deletePlant()
-                    }
-                    Button("Cancel", role: .cancel) {}
-                } message: {
-                    Text("This will remove the plant and its reminder.")
-                }
 
                 Spacer(minLength: 24)
             }

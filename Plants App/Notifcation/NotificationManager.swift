@@ -9,13 +9,13 @@ enum NotificationManager {
 
     static func scheduleWateringNotification(for plantName: String, everyNDays n: Int, atHour hour: Int = 9, minute: Int = 0) async {
         let content = UNMutableNotificationContent()
-        content.title = "Hey! let’s water your plant"
-        content.body = "\(plantName) will be happy 💧"
+        content.title = "Planto"
+        content.body = "Hey! let’s water your plant"
         content.sound = .default
 
         let center = UNUserNotificationCenter.current()
 
-        // Do not use `await` here; this API is synchronous.
+      
         center.removeAllPendingNotificationRequests()
 
         let cal = Calendar.current
@@ -33,7 +33,7 @@ enum NotificationManager {
             let id = "water-\(plantName)-\(i)-\(Int(fireDate.timeIntervalSince1970))"
             let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
 
-            // Use completion-handler variant for broader compatibility
+            
             center.add(request) { error in
                 if let error = error {
                     print("Failed to schedule \(id): \(error)")
